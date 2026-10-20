@@ -705,15 +705,6 @@ def page_workflow():
                     st.rerun()
                 except Exception as e:
                     st.error(f"Erreur : {e}")
-
-    st.session_state.nas_dir = st.text_input(
-        "💾 Dossier cible sur le NAS",
-        value=st.session_state.nas_dir,
-        help="Ex. `/opt/NASIRM/copitch`",
-    )
-
-    src = Path(st.session_state.source_dir) if st.session_state.source_dir else None
-    nas = Path(st.session_state.nas_dir) if st.session_state.nas_dir else None
     cols = st.columns(2)
     with cols[0]:
         if src and src.is_dir():
@@ -723,6 +714,16 @@ def page_workflow():
             st.error("Dossier source introuvable")
         else:
             st.warning("Dossier source non renseigné")
+          
+    st.session_state.nas_dir = st.text_input(
+        "💾 Dossier cible sur le NAS",
+        value=st.session_state.nas_dir,
+        help="Ex. `/opt/NASIRM/copitch`",
+    )
+
+    src = Path(st.session_state.source_dir) if st.session_state.source_dir else None
+    nas = Path(st.session_state.nas_dir) if st.session_state.nas_dir else None
+    
     with cols[1]:
         if nas and nas.is_dir():
             st.success("Dossier NAS accessible")
