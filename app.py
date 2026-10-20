@@ -710,10 +710,10 @@ def page_workflow():
     if src and src.is_dir():
             n = sum(1 for _ in src.iterdir() if _.is_dir())
             st.success(f"Source OK · {n} sous-dossiers détectés")
-        elif src:
-            st.error("Dossier source introuvable")
-        else:
-            st.warning("Dossier source non renseigné")
+    elif src:
+        st.error("Dossier source introuvable")
+    else:
+        st.warning("Dossier source non renseigné")
           
     st.session_state.nas_dir = st.text_input(
         "💾 Dossier cible sur le NAS",
