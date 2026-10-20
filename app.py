@@ -706,6 +706,14 @@ def page_workflow():
                 except Exception as e:
                     st.error(f"Erreur : {e}")
     
+    src = Path(st.session_state.source_dir) if st.session_state.source_dir else None
+    if src and src.is_dir():
+            n = sum(1 for _ in src.iterdir() if _.is_dir())
+            st.success(f"Source OK · {n} sous-dossiers détectés")
+        elif src:
+            st.error("Dossier source introuvable")
+        else:
+            st.warning("Dossier source non renseigné")
           
     st.session_state.nas_dir = st.text_input(
         "💾 Dossier cible sur le NAS",
@@ -713,24 +721,13 @@ def page_workflow():
         help="Ex. `/opt/NASIRM/copitch`",
     )
 
-    src = Path(st.session_state.source_dir) if st.session_state.source_dir else None
     nas = Path(st.session_state.nas_dir) if st.session_state.nas_dir else None
-    cols = st.columns(2)
-    with cols[0]:
-        if src and src.is_dir():
-            n = sum(1 for _ in src.iterdir() if _.is_dir())
-            st.success(f"Source OK · {n} sous-dossiers détectés")
-        elif src:
-            st.error("Dossier source introuvable")
-        else:
-            st.warning("Dossier source non renseigné")
-    with cols[1]:
-        if nas and nas.is_dir():
-            st.success("Dossier NAS accessible")
-        elif nas:
-            st.info("Cible inexistante (sera créée lors du transfert)")
-        else:
-            st.warning("Dossier NAS non renseigné")
+    if nas and nas.is_dir():
+        st.success("Dossier NAS accessible")
+    elif nas:
+        st.info("Cible inexistante (sera créée lors du transfert)")
+    else:
+        st.warning("Dossier NAS non renseigné")
 
     if not (src and src.is_dir() and nas):
         st.stop()
