@@ -669,15 +669,20 @@ def page_workflow():
     # --- Dossier source : champ texte + boutons démo / upload ZIP ---
     sc1, sc2, sc3 = st.columns([4, 1, 1.4])
     with sc1:
-        st.session_state.source_dir = st.text_input(
-            "📁 Dossier source des séquences",
-            value=st.session_state.source_dir,
-            help=(
-                "En **local** : tapez n'importe quel chemin (ex. `/opt/PV6.0.1/DICOM-Laurent`).\n\n"
-                "En **cloud** : utilisez 🧪 Démo ou 📂 Importer un ZIP — le serveur "
-                "ne peut pas voir votre disque."
-            ),
-        )
+        with st.form("source_form", border=False):
+            typed = st.text_input(
+                "📁 Dossier source des séquences",
+                value=st.session_state.source_dir,
+                help=(
+                    "Tapez le chemin puis cliquez sur **Entrer** (ou appuyez sur Entrée).\n\n"
+                    "En **cloud** : utilisez 🧪 Démo ou 📂 Importer un ZIP."
+                ),
+            )
+            submitted = st.form_submit_button("Entrer")
+        if submitted:
+            # enlève les espaces et les guillemets ajoutés par « Copier en tant que chemin »
+            st.session_state.source_dir = typed.strip().strip('"')
+            st.rerun()
     with sc2:
         st.write("")
         st.write("")
