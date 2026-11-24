@@ -480,6 +480,17 @@ def transfer_to_nas(
 # ════════════════════════════════════════════════════════════════════════
 # 6. UTILITAIRES UI
 # ════════════════════════════════════════════════════════════════════════
+def pick_folder_dialog(title: str = "Sélectionner un dossier") -> str | None:
+    """Ouvre la fenêtre native de sélection de dossier (mode local)."""
+    import tkinter as tk
+    from tkinter import filedialog
+
+    root = tk.Tk()
+    root.withdraw()
+    root.wm_attributes("-topmost", 1)  # Force la fenêtre au premier plan
+    folder = filedialog.askdirectory(master=root, title=title)
+    root.destroy()
+    return folder if folder else None
 def _extract_zip_to_temp(uploaded_file) -> Path:
     """Décompresse un ZIP uploadé dans un dossier temporaire.
 
@@ -694,22 +705,17 @@ def page_workflow():
             st.session_state.nb_separateurs = 2
             st.rerun()
     with sc3:
-        st.write("")
-        st.write("")
-        with st.popover("📂 Importer ZIP", use_container_width=True):
-            st.caption(
-                "Zippez votre dossier DICOM sur votre PC, puis uploadez-le ici. "
-                "L'app décompresse côté serveur et utilise le résultat comme source."
-            )
-            zf = st.file_uploader("Fichier .zip", type=["zip"], key="src_zip_uploader")
-            if zf is not None:
+            st.write("")
+            st.write("")
+            if st.button("📂 Parcourir", use_container_width=True,
+                         help="Choisir un dossier sur votre PC via l'explorateur"):
                 try:
-                    p = _extract_zip_to_temp(zf)
-                    st.session_state.source_dir = str(p)
-                    st.success(f"Importé dans `{p}`")
-                    st.rerun()
+                    chosen = pick_folder_dialog("Choisir le dossier source des séquences")
+                    if chosen:
+                        st.session_state.source_dir = chosen
+                        st.rerun()
                 except Exception as e:
-                    st.error(f"Erreur : {e}")
+                    st.error(f"Explorateur indisponible : {e}")
     
     src = Path(st.session_state.source_dir) if st.session_state.source_dir else None
     if src and src.is_dir():
