@@ -645,14 +645,9 @@ with st.sidebar:
 # 8. PAGES
 # ════════════════════════════════════════════════════════════════════════
 
-def step_header(num, title, instruction, help_text=None):
-    """Titre d'étape en gras (sans lien d'ancre), consigne en italique dessous."""
-    st.markdown(
-        f'<span style="font-size:1.15rem;font-weight:700;">{num} · {title}</span>'
-        f"\n\n*{instruction}*",
-        unsafe_allow_html=True,
-        help=help_text,
-    )
+def step_header(slot, num, title, instruction, help_text, done):
+    """Titre d'étape en gras, consigne en italique, ✅ ou 🔲 selon la validation."""
+    slot.markdown(f"#### {icon} {num} · {title}\n\n*{instruction}*", help=help_text)
   
 # ---------- PAGE : Nouvelle interface (workflow unifié) ----------
 def page_workflow():
