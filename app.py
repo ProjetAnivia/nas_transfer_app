@@ -647,7 +647,11 @@ with st.sidebar:
 
 def step_header(slot, num, title, instruction, help_text, done):
     """Titre d'étape en gras, consigne en italique, ✅ ou 🔲 selon la validation."""
-    slot.markdown(f"#### {icon} {num} · {title}\n\n*{instruction}*", help=help_text)
+    icon = "✅" if done else "🔲"
+    slot.markdown(
+        f"#### {icon} {num} · {title}\n\n*{instruction}*",
+        help=help_text
+    )
   
 # ---------- PAGE : Nouvelle interface (workflow unifié) ----------
 def page_workflow():
