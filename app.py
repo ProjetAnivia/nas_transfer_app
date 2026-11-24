@@ -645,6 +645,11 @@ with st.sidebar:
 # 8. PAGES
 # ════════════════════════════════════════════════════════════════════════
 
+def step_header(slot, num, title, instruction, help_text, done):
+    """Titre d'étape en gras, consigne en italique, ✅ ou 🔲 selon la validation."""
+    icon = "✅" if done else "🔲"
+    slot.markdown(f"#### {icon} {num} · {title}\n\n*{instruction}*", help=help_text)
+  
 # ---------- PAGE : Nouvelle interface (workflow unifié) ----------
 def page_workflow():
     st.title("Transfert IRM → NAS")
@@ -655,48 +660,68 @@ def page_workflow():
 
     # ----- 1. CONFIGURATION -----
     st.subheader("1 · Configuration")
-    c1, c2, c3 = st.columns([1, 1, 1])
-    with c1:
-        st.session_state.source_type = st.radio(
-            "Type de données",
-            ["dicom", "bruker"],
-            index=0 if st.session_state.source_type == "dicom" else 1,
-            horizontal=True,
-        )
-    with c2:
-        st.session_state.nb_separateurs = st.number_input(
-            "Séparateurs `_` dans le nom d'animal",
-            min_value=0, max_value=10,
-            value=int(st.session_state.nb_separateurs),
-            help="Ex. `M_4_11` → 2 séparateurs",
-        )
-    with c3:
-        st.session_state.animals_file_name = st.text_input(
-            "Nom du fichier d'animaux",
-            value=st.session_state.animals_file_name,
-            help="Sans extension `.txt`",
-        )
 
-    # --- Dossier source : champ texte + boutons démo / upload ZIP ---
+    # --- 1.1 Type de données ---
+    slot = st.empty()
+    st.session_state.source_type = st.radio(
+        "Type de données",
+        ["dicom", "bruker"],
+        index=0 if st.session_state.source_type == "dicom" else 1,
+        horizontal=True,
+        label_visibility="collapsed",
+    )
+    step_header(
+        slot, "1.1", "Type de données",
+        "Choisissez le format des données à transférer (dicom pour les acquisitions IRM).",
+        "dicom : séquences exportées de l'IRM. bruker : dossiers au format Paravision.",
+        done=True,
+    )
+
+    # --- 1.2 Séparateurs ---
+    slot = st.empty()
+    st.session_state.nb_separateurs = st.number_input(
+        "Séparateurs `_` dans le nom d'animal",
+        min_value=0, max_value=10,
+        value=int(st.session_state.nb_separateurs),
+        label_visibility="collapsed",
+    )
+    step_header(
+        slot, "1.2", "Séparateurs « _ » dans le nom d'animal",
+        "Indiquez combien de « _ » contient le nom d'un animal (ex. M_4_11 → 2).",
+        "Ex. `M_4_11` → 2 séparateurs",
+        done=True,
+    )
+
+    # --- 1.3 Nom du fichier d'animaux ---
+    slot = st.empty()
+    st.session_state.animals_file_name = st.text_input(
+        "Nom du fichier d'animaux",
+        value=st.session_state.animals_file_name,
+        label_visibility="collapsed",
+    )
+    step_header(
+        slot, "1.3", "Nom du fichier d'animaux",
+        "Choisissez le nom du fichier texte qui contiendra la liste des animaux (sans .txt).",
+        "Sans extension `.txt`",
+        done=bool(st.session_state.animals_file_name.strip()),
+    )
+
+    # --- 1.4 Dossier source ---
+    slot = st.empty()
     sc1, sc2, sc3 = st.columns([4, 1, 1.4])
     with sc1:
         with st.form("source_form", border=False):
             typed = st.text_input(
-                "📁 Dossier source des séquences",
+                "Dossier source des séquences",
                 value=st.session_state.source_dir,
-                help=(
-                    "Tapez le chemin puis cliquez sur **Entrer** (ou appuyez sur Entrée).\n\n"
-                    "En **cloud** : utilisez 🧪 Démo ou 📂 Importer un ZIP."
-                ),
+                label_visibility="collapsed",
             )
             submitted = st.form_submit_button("Entrer")
         if submitted:
-            # enlève les espaces et les guillemets ajoutés par « Copier en tant que chemin »
+            # enlève les espaces et les guillemets de « Copier en tant que chemin »
             st.session_state.source_dir = typed.strip().strip('"')
             st.rerun()
     with sc2:
-        st.write("")
-        st.write("")
         if st.button("🧪 Démo", use_container_width=True,
                      help="Restaurer le dossier d'exemple embarqué + la config qui va avec"):
             st.session_state.source_dir = str(DEMO_SOURCE)
@@ -705,33 +730,44 @@ def page_workflow():
             st.session_state.nb_separateurs = 2
             st.rerun()
     with sc3:
-            st.write("")
-            st.write("")
-            if st.button("📂 Parcourir", use_container_width=True,
-                         help="Choisir un dossier sur votre PC via l'explorateur"):
-                try:
-                    chosen = pick_folder_dialog("Choisir le dossier source des séquences")
-                    if chosen:
-                        st.session_state.source_dir = chosen
-                        st.rerun()
-                except Exception as e:
-                    st.error(f"Explorateur indisponible : {e}")
-    
+        if st.button("📂 Parcourir", use_container_width=True,
+                     help="Choisir un dossier sur votre PC via l'explorateur"):
+            try:
+                chosen = pick_folder_dialog("Choisir le dossier source des séquences")
+                if chosen:
+                    st.session_state.source_dir = chosen
+                    st.rerun()
+            except Exception as e:
+                st.error(f"Explorateur indisponible : {e}")
+
     src = Path(st.session_state.source_dir) if st.session_state.source_dir else None
+    src_ok = False
     if src and src.is_dir():
-            n = sum(1 for _ in src.iterdir() if _.is_dir())
+        n = sum(1 for p in src.iterdir() if p.is_dir())
+        if n == 0:
+            st.warning("Dossier trouvé, mais aucun sous-dossier détecté")
+        else:
             st.success(f"Source OK · {n} sous-dossiers détectés")
+            src_ok = True
     elif src:
         st.error("Dossier source introuvable")
     else:
         st.warning("Dossier source non renseigné")
-          
-    st.session_state.nas_dir = st.text_input(
-        "💾 Dossier cible sur le NAS",
-        value=st.session_state.nas_dir,
-        help="Ex. `/opt/NASIRM/copitch`",
+    step_header(
+        slot, "1.4", "Dossier source des séquences",
+        "Cliquez sur Parcourir pour choisir le dossier, ou saisissez son chemin puis cliquez sur Entrer.",
+        "Parcourir ouvre l'explorateur de votre PC (en local uniquement). "
+        "Vous pouvez aussi taper le chemin puis cliquer sur Entrer.",
+        done=src_ok,
     )
 
+    # --- 1.5 Dossier cible NAS ---
+    slot = st.empty()
+    st.session_state.nas_dir = st.text_input(
+        "Dossier cible sur le NAS",
+        value=st.session_state.nas_dir,
+        label_visibility="collapsed",
+    )
     nas = Path(st.session_state.nas_dir) if st.session_state.nas_dir else None
     if nas and nas.is_dir():
         st.success("Dossier NAS accessible")
@@ -739,6 +775,18 @@ def page_workflow():
         st.info("Cible inexistante (sera créée lors du transfert)")
     else:
         st.warning("Dossier NAS non renseigné")
+    step_header(
+        slot, "1.5", "Dossier cible sur le NAS",
+        "Saisissez le dossier de destination des données, puis appuyez sur Entrée.",
+        "Ex. `/opt/NASIRM/copitch`",
+        done=bool(nas),
+    )
+
+    # --- Bilan de l'étape 1 ---
+    if src_ok and nas and st.session_state.animals_file_name.strip():
+        st.success("✅ Configuration validée. Vous pouvez passer à l'étape 2 ci-dessous.")
+    else:
+        st.info("🔲 Complétez les étapes ci-dessus pour passer à l'étape 2.")
 
     if not (src and src.is_dir() and nas):
         st.stop()
